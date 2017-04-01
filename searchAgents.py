@@ -444,6 +444,61 @@ class AStarFoodSearchAgent(SearchAgent):
     self.searchFunction = lambda prob: search.aStarSearch(prob, foodHeuristic)
     self.searchType = FoodSearchProblem
 
+def walkable_dist(xy1, xy2, walls):
+  horizental_dist = abs(xy1[0] - xy2[0])
+  vertical_dist = abs(xy1[1] - xy2[1])
+  left_bound = min(xy1[0], xy2[0])
+  right_bound = max(xy1[0], xy2[0])
+  top_bound = max(xy1[1], xy2[1])
+  bot_bound = min(xy1[1], xy2[1])
+  maze_top, maze_right = walls.height-2, walls.width-2
+
+  vertical_extra_walk = 0
+  for i in range(left_bound+1, right_bound):  # check if vertial wall exist
+    existed_walls = [walls[i][j] for j in range(bot_bound, top_bound+1)]
+    if len(existed_walls) == sum(existed_walls):  # there really exist one wall!
+      bot_extra_walk = 0
+      for j in range(bot_bound-1, 0, -1):
+        if walls[i][j] == True:
+          bot_extra_walk  += 1
+        else:
+          break
+      if bot_extra_walk == bot_bound-1:  # reach the bot boundary
+        bot_extra_walk = float('Inf')
+      top_extra_walk = 0
+      for j in range(top_bound, maze_top+1):
+        if walls[i][j] == True:
+          top_extra_walk += 1
+        else:
+          break
+      if top_extra_walk == maze_top - top_bound:  # reach the top boundary
+        top_extra_walk = float('Inf')
+      vertical_extra_walk = max(min(bot_extra_walk, top_extra_walk), vertical_extra_walk)
+
+  horizental_extra_walk = 0
+  for i in range(bot_bound+1, top_bound):
+    existed_walls = [walls[j][i] for j in range(left_bound, right_bound+1)]
+    if len(existed_walls) == sum(existed_walls):
+      left_extra_walk = 0
+      for j in range(left_bound-1, 0, -1):
+        if walls[j][i] == True:
+          left_extra_walk += 1
+        else:
+          break
+      if left_extra_walk == left_bound-1:
+        left_extra_walk = float('Inf')
+      right_extra_walk = 0
+      for j in range(right_bound, maze_right+1):
+        if walls[j][i] == True:
+          right_extra_walk += 1
+        else:
+          break
+      if right_extra_walk == maze_right - right_bound:
+        right_extra_walk = float('Inf')
+      horizental_extra_walk = max(min(left_extra_walk, right_extra_walk), horizental_extra_walk)
+
+  return horizental_dist + (2 * horizental_extra_walk) + vertical_dist + (2 * vertical_extra_walk)
+
 def foodHeuristic(state, problem):
   """
   Your heuristic for the FoodSearchProblem goes here.
@@ -470,8 +525,20 @@ def foodHeuristic(state, problem):
   Subsequent calls to this heuristic can access problem.heuristicInfo['wallCount']
   """
   position, foodGrid = state
-  "*** YOUR CODE HERE ***"
-  return 0
+  # food_dist_list = [abs(position[1] - i[1]) + abs(position[0] - i[0]) for i in foodGrid.asList()]
+  food_dist_list = [walkable_dist(position, i, problem.walls) for i in foodGrid.asList()]
+  if len(food_dist_list) > 0:
+    max_dist = max(food_dist_list)
+    min_dist = min(food_dist_list)
+    dist_sum = min_dist
+    for f in foodGrid.asList():
+      # food_from_food_dist_list = [abs(f[1] - i[1]) + abs(f[0] - i[0]) for i in foodGrid.asList() if i != f]
+      food_from_food_dist_list = [walkable_dist(f, i, problem.walls) for i in foodGrid.asList() if i != f]
+      if len(food_from_food_dist_list) > 0:
+        dist_sum += min(food_from_food_dist_list)
+    return max(max_dist, dist_sum)
+  else:
+    return 0
   
 class ClosestDotSearchAgent(SearchAgent):
   "Search for all food using a sequence of searches"
