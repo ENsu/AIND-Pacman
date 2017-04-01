@@ -14,11 +14,27 @@ import heapq, random
 """
  Data structures useful for implementing SearchAgents
 """
+class Node:
+  "An obj to be explored as an potential answer"
+  def __init__(self, state, action=None, cost=0):
+    self.state = state
+    self.actions = [action] if action else []
+    self.cost = cost
+    self.parent = None
+
+  def update_parent(self, parent):
+    if parent:
+      self.actions = parent.actions + self.actions
+      self.cost = parent.cost + self.cost
+      self.parent = parent
 
 class Stack:
   "A container with a last-in-first-out (LIFO) queuing policy."
   def __init__(self):
     self.list = []
+
+  def __contains__(self, node):
+    return node.state in [n.state for n in self.list]
     
   def push(self,item):
     "Push 'item' onto the stack"
@@ -36,6 +52,9 @@ class Queue:
   "A container with a first-in-first-out (FIFO) queuing policy."
   def __init__(self):
     self.list = []
+
+  def __contains__(self, node):
+    return node.state in [n.state for n in self.list]
   
   def push(self,item):
     "Enqueue the 'item' into the queue"
@@ -65,6 +84,9 @@ class PriorityQueue:
   """  
   def  __init__(self):  
     self.heap = []
+
+  def __contains__(self, node):
+    return node.state in [n[1].state for n in self.heap]
     
   def push(self, item, priority):
       pair = (priority,item)
